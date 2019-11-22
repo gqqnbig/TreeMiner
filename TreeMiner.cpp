@@ -45,6 +45,12 @@ struct Subtree {
     void output() {
         if(elements.size()==0) return;
         printf("prefix: ");
+		if (prefix.size() == 0)
+			printf("empty");
+		else {
+			for (int i = 0; i < prefix.size(); i++)
+				printf("%d ", prefix[i]);
+		}
         for(int i=0; i<prefix.size(); i++) printf("%d ",prefix[i]);
         puts("");
         for(int i=0; i<elements.size(); i++) {
