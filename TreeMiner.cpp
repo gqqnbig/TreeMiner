@@ -7,7 +7,7 @@
 #include <sstream>
 #include <string>
 
-//#define LatexOutput
+#define LatexOutput
 
 //#define debug
 using namespace std;
@@ -66,7 +66,7 @@ struct Pair {
 
 struct Scope {
 	int tid; // tree id
-	vi m;    // match label of the k-1 length prefix
+	vi m;    // match label of the k-1 length prefix. 与原树的哪些节点匹配
 	Pair s;  // scope of the last item
 	Scope() {}
 
@@ -114,9 +114,9 @@ struct Subtree {
 		for (int i = 0; i < prefix.size(); i++) {
 			char buff[50];
 			if (prefix[i] == -1)
-				sprintf(buff, "%d ", prefix[i]);
+				sprintf(buff, "%d, ", prefix[i]);
 			else
-				sprintf(buff, "%c ", 'A' - 1 + prefix[i]);
+				sprintf(buff, "%c, ", 'A' - 1 + prefix[i]);
 
 			s = s + buff;
 		}
@@ -128,13 +128,13 @@ struct Subtree {
 
 		if (elements.size() == 0)
 			return;
-		printf("prefix (class template): ");
-		if (prefix.size() == 0)
-			printf("empty");
-		else {
-			printf(prefixToString().c_str());
-		}
-		puts("");
+//		printf("prefix (class template): ");
+//		if (prefix.size() == 0)
+//			printf("empty");
+//		else {
+//			printf(prefixToString().c_str());
+//		}
+		puts("the scope lists are:");
 		for (int i = 0; i < elements.size(); i++) {
 			// puts("----------");
 			printf("New node: ");
@@ -144,11 +144,12 @@ struct Subtree {
 #ifdef debug
 			vector<Scope>& scopes = elements[i].scopes;
 			for (int j = 0; j < scopes.size(); j++) {
-				printf("%d,", scopes[j].tid);
-				for (int k = 0; k < scopes[j].m.size(); k++)
-					printf("%d%c", scopes[j].m[k],
-								 k + 1 == scopes[j].m.size() ? ',' : ' ');
-				printf("[%d,%d]\n", scopes[j].s.content, scopes[j].s.position);
+				printf("%d, ", scopes[j].tid);
+				printf(vectorToString(scopes[j].m, "[]").c_str());
+//				for (int k = 0; k < scopes[j].m.size(); k++)
+//					printf("%d%c", scopes[j].m[k],
+//								 k + 1 == scopes[j].m.size() ? ',' : ' ');
+				printf(", [%d,%d]\n", scopes[j].s.content, scopes[j].s.position);
 			}
 #endif
 		}
@@ -194,12 +195,13 @@ void work(const vi& v, int tid) {
 	}
 }
 
-void Prefix_Generate(const vi& pre1, const Pair& label, vi& pre2) {
-	pre2 = pre1;
+void Prefix_Generate(const vi& pre1, const Pair& label, vi& out_pre) {
+	out_pre = pre1;
 	for (int i = 0, fa = 0; i < pre1.size(); i++) {
 		if (pre1[i] == -1)
 			continue;
 		if (fa++ == label.position) {
+			//看看后面还有多少元素，就要写入-1将其弹出。
 			int cnt = 0;
 			for (int j = i + 1; j < pre1.size(); j++) {
 				if (pre1[j] != -1)
@@ -208,11 +210,11 @@ void Prefix_Generate(const vi& pre1, const Pair& label, vi& pre2) {
 					cnt--;
 			}
 			for (int j = 0; j < cnt; j++)
-				pre2.push_back(-1);
+				out_pre.push_back(-1);
 			break;
 		}
 	}
-	pre2.push_back(label.content);
+	out_pre.push_back(label.content);
 }
 
 int showVerboseScope=3;
@@ -231,8 +233,11 @@ void TMdfs(Subtree P) {
 		Subtree PP;
 		Pair px = P.elements[i].label;
 		Prefix_Generate(P.prefix, px, PP.prefix);
-
-		printf("Try prefix %s.\n", PP.prefixToString().c_str());
+		puts("");
+		if (i > 0)
+			printf("Back to case where prefix is [%s], ", P.prefixToString().c_str());
+		printf("Iterate subtree %s over itself and others. Thus we get prefix [%s].\n",
+					 P.elements[i].label.toLabelString().c_str(), PP.prefixToString().c_str());
 		vector<Scope>& scopex = P.elements[i].scopes;
 		for (int j = 0; j < P.elements.size(); j++) {
 			Pair py = P.elements[j].label;
@@ -262,7 +267,7 @@ void TMdfs(Subtree P) {
 						}
 					}
 				if (eleIn.scopes.size() == 0)
-					printf("but %s(%s) has nothing.\n", scopeListSymbol, eleIn.label.toLabelString().c_str());
+					printf("but no scopes can do in-scope join.\n", scopeListSymbol, eleIn.label.toLabelString().c_str());
 				else if (eleIn.check()) {
 					PP.elements.push_back(eleIn);
 					puts("The pattern is frequent based on the scope list.");
@@ -284,20 +289,22 @@ void TMdfs(Subtree P) {
 						if (scopex[r].tid == scopey[t].tid && scopex[r].m == scopey[t].m &&
 								scopex[r].s.position < scopey[t].s.content) {
 							Scope s = Scope(scopex[r].tid, scopex[r].m,
-																		 scopex[r].s.content, scopey[t].s);
+															scopex[r].s.content, scopey[t].s);
+
 							printScopeJoin(scopex[r],scopey[t], s);
 							eleOut.scopes.push_back(s);
 						}
 					}
 				if (eleOut.scopes.size() == 0)
-					printf("but %s(%s) has nothing.\n", scopeListSymbol, eleOut.label.toLabelString().c_str());
+					printf("but no scopes can do out-scope join.\n", scopeListSymbol, eleOut.label.toLabelString().c_str());
 				else if (eleOut.check()) {
 					puts("The pattern is frequent based on the scope list.");
 					PP.elements.push_back(eleOut);
 				} else
 					puts("The pattern is not frequent on the scope list.");
-
 			}
+			else
+				printf("Cannot run out-scope join because %s is the root.\n", py.toLabelString().c_str());
 		}
 		TMdfs(PP);
 	}
