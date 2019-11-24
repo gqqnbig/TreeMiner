@@ -69,11 +69,12 @@ struct Element {
 
   //check support
   bool check() {
-	  int cnt = 0, pre = -1;
-	  for (int i = 0; i < scopes.size(); i++) {
-		  int tid = scopes[i].tid;
-		  if (tid != pre)
-			  cnt++, pre = tid;
+		int cnt = 0, checkedTree = -1;
+
+		for (int i = 0; i < scopes.size(); i++) {
+			int tid = scopes[i].tid;
+			if (tid != checkedTree)
+				cnt++, checkedTree = tid;
 	  }
 	  return cnt >= MinSup;
   }
