@@ -215,6 +215,16 @@ void Prefix_Generate(const vi& pre1, const Pair& label, vi& pre2) {
 	pre2.push_back(label.content);
 }
 
+int showVerboseScope=3;
+
+void printScopeJoin(Scope& s1, Scope& s2, Scope& result) {
+	printf((string("") + (useLatex ? "$ " : "") + "%s %s %s=%s" + (useLatex ? "$ \\\\" : "") + "\n").c_str(), s1.toString(showVerboseScope>0).c_str(),
+				 joinOperator, s2.toString(showVerboseScope>0).c_str(),
+				 result.toString(false).c_str());
+
+	showVerboseScope--;
+}
+
 void TMdfs(Subtree P) {
 	P.output();
 	for (int i = 0; i < P.elements.size(); i++) {
@@ -247,9 +257,7 @@ void TMdfs(Subtree P) {
 
 							Scope s = Scope(scopex[r].tid, scopex[r].m, scopex[r].s.content,
 															scopey[t].s);
-							printf((string("") + (useLatex ? "$" : "") + "%s %s %s=%s" + (useLatex ? "$" : "") + "\n").c_str(), scopex[r].toString().c_str(),
-										 joinOperator, scopey[t].toString().c_str(),
-										 s.toString(false).c_str());
+							printScopeJoin(scopex[r],scopey[t], s);
 							eleIn.scopes.push_back(s);
 						}
 					}
@@ -277,9 +285,7 @@ void TMdfs(Subtree P) {
 								scopex[r].s.position < scopey[t].s.content) {
 							Scope s = Scope(scopex[r].tid, scopex[r].m,
 																		 scopex[r].s.content, scopey[t].s);
-							printf((string("") + (useLatex ? "$" : "") + "%s %s %s=%s" + (useLatex ? "$" : "") + "\n").c_str(), scopex[r].toString().c_str(),
-										 joinOperator, scopey[t].toString().c_str(),
-										 s.toString(false).c_str());
+							printScopeJoin(scopex[r],scopey[t], s);
 							eleOut.scopes.push_back(s);
 						}
 					}
